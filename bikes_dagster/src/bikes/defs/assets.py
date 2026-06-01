@@ -2,221 +2,143 @@ import pandas as pd
 from . import supply
 import dagster as dg
 
-
-@dg.asset(group_name="raw_data")
-def direct_pickup_bike_rentals() -> pd.DataFrame:
-    """
-    Ingests raw direct pickups, formats time, flags the source, and drops indexes.
-    
-    Parameters
-    ----------
-    None
-    Returns
-    -------
-    pandas.DataFrame
-        A *cleaned* dataframe containing direct pickup bike rental information with a datetime index and an 'is_registered' flag set to False.
-    """
-    df = pd.read_csv(supply.PATH_DIRECT_PICKUP_BIKE)
-    df['datetime'] = pd.to_datetime(df['datetime'], errors='coerce')
-    df['is_registered'] = False
-    df = df.drop(columns=['id'])
+def raw_store_events(path) -> pd.DataFrame:
+    """Loads store events and aligns the timestamp column."""
+    # Reads the file and immediately renames 'event_day' to 'datetime'
+    df = pd.read_csv(path)
+    df = df.rename(columns={"date": "datetime"})
     return df
 
-@dg.asset(group_name="raw_data")
-def holidays() -> pd.DataFrame:
-    """
-    Ingests and cleans the holidays data.
+def clean_basic(df):
+    clean_df = df.copy()
+    clean_df['datetime'] = pd.to_datetime(clean_df['datetime'], errors='coerce')
+    return clean_df.drop(columns=["id"], errors='ignore')
 
-    Parameters
-    ----------
-    None
-    Returns
-    -------
-    pandas.DataFrame
-        A *cleaned* dataframe containing holiday information with a datetime index.
-    """
-    df = pd.read_csv(supply.PATH_HOLIDAYS)
-    df['date'] = pd.to_datetime(df['date'], errors='coerce')
-    df['is_holiday'] = True
-    df = df.drop(columns=['id'])
-    return df
-
-@dg.asset(group_name="raw_data")
-def registered_bike_rentals() -> pd.DataFrame:
-    """
-    Ingests and cleans the registered bike rentals data.
-
-    Parameters
-    ----------
-    None
-    Returns
-    -------
-    pandas.DataFrame
-        A *cleaned* dataframe containing registered bike rental information with a datetime index."""
-    df = pd.read_csv(supply.PATH_REGISTERED_BIKE)
-    df['datetime'] = pd.to_datetime(df['datetime'], errors='coerce')
-    df = df.drop(columns=['id'])
-    df['is_registered'] = True
-    return df
-
-@dg.asset(group_name="raw_data")
-def weather() -> pd.DataFrame:
-    """
-    Ingests and cleans the weather data.
-
-    Parameters
-    ----------
-    None
-    Returns
-    -------
-    pandas.DataFrame
-        A *cleaned* dataframe containing weather information with a datetime index.
-    """
-    df = pd.read_csv(supply.PATH_WEATHER)
-    df['datetime'] = pd.to_datetime(df['datetime'])
-    df = df.drop(columns=['id'])
-    return df
-
-@dg.asset(group_name="processed_data")
-def merge_regdir_bikes(registered_bike_rentals, direct_pickup_bike_rentals):
-    """
-    Stacks the registered and direct rental tables vertically into a single ledger.
-
-    Parameters
-    ----------
-    registered_bike_rentals : pandas.DataFrame
-        The *cleaned* dataframe of registered bike rentals.
-    direct_pickup_bike_rentals : pandas.DataFrame
-        The *cleaned* dataframe of direct pickup bike rentals.
+def prepare_bikes(raw_df, event_type_name):
+    engineered_df = raw_df.copy()
+    # 1. Floor the time down to the hour
+    engineered_df["floor_datetime"] = engineered_df["datetime"].dt.floor("h")
     
-    """
-    master_bikes = pd.concat([registered_bike_rentals, direct_pickup_bike_rentals], ignore_index=True)
-    return master_bikes
-
-def align_time(merge_regdir_bikes):
-    """
-    HELEPER FUNCTION:Creates perfectly aligned time keys for merging without destroying the precise datetime.
-
-    Parameters
-    ----------
-    merge_regdir_bikes : pandas.DataFrame
-        The master dataframe containing both registered and direct bike rentals.
-
-    Returns
-    -------
-    pandas.DataFrame
-        A new dataframe with appended 'join_hour' and 'join_date' columns for temporal merging.
-    """
-    # We rename the internal variable to match the incoming asset
-    master_df = merge_regdir_bikes.copy() 
-    master_df['join_hour'] = master_df['datetime'].dt.floor('h')
-    master_df['join_date'] = pd.to_datetime(master_df['datetime'].dt.date)
-    return master_df
-
-def engineer_time_features(df):
-    """
-    HELEPER FUNCTION:Extracts standalone numerical features from the exact timestamp.
-
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        The dataframe containing the 'datetime' column to be engineered.
-    Returns
-    -------
-    pandas.DataFrame
-        A new dataframe with additional time-based features extracted from the 'datetime' column.
-    """
-    engineered_df = df.copy()
+    # 2. Group by the floored time and count the rows
+    summary_df = engineered_df.groupby("floor_datetime").size().reset_index(name="rents_per_hour")
     
-    # Extract the hour (0-23)
-    # Why: Bike rentals heavily depend on morning/evening rush hours.
-    engineered_df['hour'] = engineered_df['datetime'].dt.hour
+    # 3. Add the identifying flag to the summarized data
+    summary_df["is_registered"] = event_type_name
     
-    # Extract the day of the week (Monday=0, Sunday=6)
-    # Why: Commuters rent on weekdays; tourists rent on weekends.
-    engineered_df['day_of_week'] = engineered_df['datetime'].dt.dayofweek
-    
-    return engineered_df
+    return summary_df
 
-def encode_weather_conditions(df):
-    """
-    HELEPER FUNCTION:Simplifies and encodes weather conditions into machine-readable features.
+def prepare_holidays(raw_df):
+    final_df = raw_df.copy()
+    return final_df.assign(is_holiday=True).drop(columns=["holiday_name"])
 
-    Parameters
-    ----------
-    df : pandas.DataFrame
-        The dataframe containing the 'conditions' column to be encoded.
-    Returns
-    -------
-    pandas.DataFrame
-        A new dataframe with the 'conditions' column replaced by booleans-like encoded weather features.
-    """
-    engineered_df = df.copy()
-    engineered_df['conditions'] = engineered_df['conditions'].replace(
-        ['heavy_rain', 'light_rain'], 
-        'rain'
-    )
-    
-    # Encoding: Explode the text column into independent boolean columns
-    # prefix='weather' ensures ther new columns are neatly named (e.g., 'weather_clear')
-    # dtype=bool ensures we get True/False instead of 1/0, matching is_holiday column
-    engineered_df = pd.get_dummies(
-        engineered_df, 
+def prepare_weather(df):
+    # Directly explodes the categorical column without grouping prior values
+    encoded_df = df.copy()
+    encoded_df = pd.get_dummies(
+        df, 
         columns=['conditions'], 
-        prefix='weather',
+        prefix='weather_', 
         dtype=bool
     )
+    return encoded_df
+
+def merge_bikes(registered_df, direct_df):
+    merged_df = pd.concat([registered_df, direct_df], ignore_index=True)
+    return merged_df
+
+
+def merge_weather_holidays(weather_cleaned_df, holidays_cleaned_df):
+    weather_df = weather_cleaned_df.copy()
+    holidays_df = holidays_cleaned_df.copy()
     
-    return engineered_df
-
-@dg.asset(group_name="final_data")
-def feature_engineered_dataset(merge_regdir_bikes, weather, holidays):
-    """
-    Performs Left Joins to attach weather and holiday context.
-
-    Parameters
-    ----------
-    merge_regdir_bikes : pandas.DataFrame
-        The master dataframe containing both registered and direct bike rentals
-    weather : pandas.DataFrame
-        The dataframe containing weather information
-    holidays : pandas.DataFrame
-        The dataframe containing holiday information
-    Returns
-    -------
-    pandas.DataFrame
-        A fully feature-engineered dataframe ready for modeling, with weather and holiday context merged in.
-    """
-    aligned_df = align_time(merge_regdir_bikes)  # Get the aligned dataframe with join keys
-    # Merge Weather on the hourly key (using the incoming 'align_time' asset)
+    # Create daily key for merging
+    weather_df['join_date'] = weather_df['datetime'].dt.normalize()
+    
+    # Merge Weather on the hourly key
     merged_df = pd.merge(
-        aligned_df, 
-        weather, 
-        left_on='join_hour', 
-        right_on='datetime', 
+        left=weather_df,
+        right=holidays_df,
         how='left',
-        suffixes=('', '_weather')
-    )
-    
-    # Merge Holidays on the daily key (using the incoming 'holidays' asset)
-    merged_df = pd.merge(
-        merged_df,
-        holidays,
         left_on='join_date',
-        right_on='date',
-        how='left'
+        right_on='datetime'
     )
     
     # Cleanup Nan
     merged_df['is_holiday'] = merged_df['is_holiday'].fillna(False).astype(bool)
     
-    # Drop the redundant merge keys
-    columns_to_drop = ['join_hour', 'join_date', 'datetime_weather', 'date']
-    merged_df = merged_df.drop(columns=columns_to_drop)
-    merged_df = encode_weather_conditions(merged_df)  # Apply weather encoding to the merged dataframe
-    merged_df = engineer_time_features(merged_df)  # Apply time feature engineering to the merged dataframe
-    with open("feature_engineered_bike_rentals.csv", "w") as f:
-        f.write(merged_df.to_csv(index=False))  
+    # Resolve Pandas Suffix Collision: 
+    # Drop the temporary join date and the holiday's original datetime ('datetime_y')
+    merged_df = merged_df.drop(columns=['join_date', 'datetime_y'])
+    
+    # Rename the weather's original datetime ('datetime_x') to match the bike ledger
+    merged_df = merged_df.rename(columns={'datetime_x': 'floor_datetime'})
+    
     return merged_df
 
-# *cleaned* meanse that the id column has been dropped, datetime is in datetime format, and the is_registered flag is set.
+@dg.asset(group_name="raw_data")
+def holliday() -> pd.DataFrame:
+    return raw_store_events(supply.PATH_HOLIDAYS)
+
+@dg.asset(group_name="raw_data")
+def weather() -> pd.DataFrame:
+    return raw_store_events(supply.PATH_WEATHER)
+
+@dg.asset(group_name="raw_data")
+def registered_bike_rentals() -> pd.DataFrame:
+    return raw_store_events(supply.PATH_REGISTERED_BIKE)
+
+@dg.asset(group_name="raw_data")
+def direct_pickup_bike_rentals() -> pd.DataFrame:
+    return raw_store_events(supply.PATH_DIRECT_PICKUP_BIKE)
+
+@dg.asset(group_name="cleaned_data")
+def cleaned_holidays(holliday) -> pd.DataFrame:
+    return clean_basic(holliday)
+
+@dg.asset(group_name="cleaned_data")
+def cleaned_weather(weather) -> pd.DataFrame:
+    return clean_basic(weather)
+
+@dg.asset(group_name="cleaned_data")
+def cleaned_registered_bike_rentals(registered_bike_rentals) -> pd.DataFrame:
+    return clean_basic(registered_bike_rentals)
+
+@dg.asset(group_name="cleaned_data")
+def cleaned_direct_pickup_bike_rentals(direct_pickup_bike_rentals) -> pd.DataFrame:
+    df = clean_basic(direct_pickup_bike_rentals)
+    return df
+
+@dg.asset(group_name="merge_preparation")
+def registered_merge_ready(cleaned_registered_bike_rentals) -> pd.DataFrame:
+    return prepare_bikes(cleaned_registered_bike_rentals, True)
+
+@dg.asset(group_name="merge_preparation")
+def direct_merge_ready(cleaned_direct_pickup_bike_rentals) -> pd.DataFrame:
+    return prepare_bikes(cleaned_direct_pickup_bike_rentals, False)
+
+@dg.asset(group_name="merge_preparation")
+def holidays_merge_ready(cleaned_holidays) -> pd.DataFrame:
+    return prepare_holidays(cleaned_holidays)
+
+@dg.asset(group_name="final_part")
+def weather_merge_ready(cleaned_weather) -> pd.DataFrame:
+    return prepare_weather(cleaned_weather)
+
+@dg.asset(group_name="final_part")
+def merge_regdir_bikes(registered_merge_ready, direct_merge_ready):
+    return merge_bikes(registered_merge_ready, direct_merge_ready)
+
+@dg.asset(group_name="result")
+def model_ready_dataset(merge_regdir_bikes, weather_merge_ready) -> pd.DataFrame:
+    final_df = pd.merge(
+        left=merge_regdir_bikes,
+        right=weather_merge_ready,
+        how='left',
+        on='floor_datetime' # Both tables now share this exact column name
+    )
+    
+    # Persist the final output as per acceptance criteria
+    # final_df.to_csv("feature_engineered_bike_rentals.csv", index=False)
+    
+    return final_df
+

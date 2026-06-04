@@ -1,0 +1,6 @@
+conditions
+clear         11413
+clouds         4544
+light_rain     1419
+heavy_rain        3
+Name: count, dtype: int64

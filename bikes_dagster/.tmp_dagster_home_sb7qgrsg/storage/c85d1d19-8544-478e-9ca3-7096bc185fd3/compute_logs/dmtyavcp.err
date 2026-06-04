@@ -1,0 +1,7 @@
+[32m2026-06-03 15:12:47 +0200[0m - dagster - [34mDEBUG[0m - __ASSET_JOB - c85d1d19-8544-478e-9ca3-7096bc185fd3 - 44113 - LOGS_CAPTURED - Capturing logs for process (pid: 44113).
+[32m2026-06-03 15:12:47 +0200[0m - dagster - [34mDEBUG[0m - __ASSET_JOB - c85d1d19-8544-478e-9ca3-7096bc185fd3 - 44113 - holidays - STEP_START - Started execution of step "holidays".
+[32m2026-06-03 15:12:47 +0200[0m - dagster - [34mDEBUG[0m - __ASSET_JOB - c85d1d19-8544-478e-9ca3-7096bc185fd3 - 44113 - holidays - STEP_OUTPUT - Yielded output "result" of type "DataFrame". (Type check passed).
+[32m2026-06-03 15:12:47 +0200[0m - dagster - [34mDEBUG[0m - __ASSET_JOB - c85d1d19-8544-478e-9ca3-7096bc185fd3 - holidays - Writing file at: /Users/OleksiiIshchenko/project_prod/bikes_dagster/.tmp_dagster_home_sb7qgrsg/storage/holidays using PickledObjectFilesystemIOManager...
+[32m2026-06-03 15:12:47 +0200[0m - dagster - [34mDEBUG[0m - __ASSET_JOB - c85d1d19-8544-478e-9ca3-7096bc185fd3 - 44113 - holidays - ASSET_MATERIALIZATION - Materialized value holidays.
+[32m2026-06-03 15:12:47 +0200[0m - dagster - [34mDEBUG[0m - __ASSET_JOB - c85d1d19-8544-478e-9ca3-7096bc185fd3 - 44113 - holidays - HANDLED_OUTPUT - Handled output "result" using IO manager "io_manager"
+[32m2026-06-03 15:12:47 +0200[0m - dagster - [34mDEBUG[0m - __ASSET_JOB - c85d1d19-8544-478e-9ca3-7096bc185fd3 - 44113 - holidays - STEP_SUCCESS - Finished execution of step "holidays" in 30ms.

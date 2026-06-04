@@ -111,6 +111,7 @@ dependencies = [
     { name = "dagster" },
     { name = "pandas", version = "2.3.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "pandas", version = "3.0.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
+    { name = "scklearn" },
 ]
 
 [package.dev-dependencies]
@@ -123,6 +124,7 @@ dev = [
 requires-dist = [
     { name = "dagster", specifier = "==1.13.6" },
     { name = "pandas", specifier = ">=2.3.3" },
+    { name = "scklearn", specifier = ">=0.0.2" },
 ]
 
 [package.metadata.requires-dev]
@@ -2325,6 +2327,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/13/64/b4d76f227d5c45a7e0b796c674fd81b0a6c4fbd48dc29271857d8219571c/rpds_py-0.30.0-pp311-pypy311_pp73-musllinux_1_2_aarch64.whl", hash = "sha256:dff13836529b921e22f15cb099751209a60009731a68519630a24d61f0b1b30a", size = 573981, upload-time = "2025-11-30T20:24:32.934Z" },
     { url = "https://files.pythonhosted.org/packages/20/91/092bacadeda3edf92bf743cc96a7be133e13a39cdbfd7b5082e7ab638406/rpds_py-0.30.0-pp311-pypy311_pp73-musllinux_1_2_i686.whl", hash = "sha256:1b151685b23929ab7beec71080a8889d4d6d9fa9a983d213f07121205d48e2c4", size = 599782, upload-time = "2025-11-30T20:24:35.169Z" },
     { url = "https://files.pythonhosted.org/packages/d1/b7/b95708304cd49b7b6f82fdd039f1748b66ec2b21d6a45180910802f1abf1/rpds_py-0.30.0-pp311-pypy311_pp73-musllinux_1_2_x86_64.whl", hash = "sha256:ac37f9f516c51e5753f27dfdef11a88330f04de2d564be3991384b2f3535d02e", size = 562191, upload-time = "2025-11-30T20:24:36.853Z" },
+]
+
+[[package]]
+name = "scklearn"
+version = "0.0.2"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/a1/6d/0e2454edc6f14105afe268ede26045fa582e4f4570e323ae86f0a43e95f6/scklearn-0.0.2.tar.gz", hash = "sha256:7af6f9e83804891980d8422fd56ae1d86e7eaa9af38b122edc91869d0a5d6726", size = 4130, upload-time = "2026-05-11T09:51:48.842Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/41/33/133f9f3a8af56920b533136d647ad42e9930a28a4387ec96739a097b4d8c/scklearn-0.0.2-py3-none-any.whl", hash = "sha256:fe7265ba0a3d0d530d8e24cb80093d83ca6b0115b587c9b5d708d7a5250d934b", size = 4561, upload-time = "2026-05-11T09:51:47.877Z" },
 ]
 
 [[package]]

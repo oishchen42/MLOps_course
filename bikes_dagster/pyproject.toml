@@ -5,6 +5,7 @@ version = "0.1.0"
 dependencies = [
     "dagster==1.13.6",
     "pandas>=2.3.3",
+    "scklearn>=0.0.2",
 ]
 
 [dependency-groups]

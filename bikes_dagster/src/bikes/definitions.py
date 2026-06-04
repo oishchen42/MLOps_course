@@ -3,9 +3,7 @@ from pathlib import Path
 import dagster as dg
 import pandas as pd
 
-# 1. IMPORT YOUR MODULES HERE
-# This tells Python where to find first_stage, bikes_merge, etc.
-from .defs import first_stage, bikes_merge, united_bikes_holidays, united_all
+from .defs import first_stage, bikes_merge, united_bikes_holidays, united_all, models_linear_reg, models_hist_gradient_boosting_reg
 
 class LocalCSVIOManager(dg.ConfigurableIOManager):
     base_dir: str
@@ -28,13 +26,14 @@ class LocalCSVIOManager(dg.ConfigurableIOManager):
         context.log.info(f"Loading CSV from: {file_path}")
         return pd.read_csv(file_path)
 
-# 2. ASSEMBLE THE ASSETS
-# Python now recognizes these names because they were imported above
+
 all_assets = dg.load_assets_from_modules([
     first_stage,
     bikes_merge,
     united_bikes_holidays,
-    united_all
+    united_all,
+    models_linear_reg,
+    models_hist_gradient_boosting_reg
 ])
 
 defs = dg.Definitions(

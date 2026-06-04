@@ -16,16 +16,18 @@ import model_helpers as mh
     }
 )
 def advanced_tree_model(dfs_united_with_time_features: pd.DataFrame):
-    """Trains a HistGradientBoostingRegressor on the engineered bike timeline.
-    ------
-    Value: The trained HistGradientBoostingRegressor model object.
-    Metadata:
-- RMSE: Root Mean Squared Error of the model on the test set.
-- MAE: Mean Absolute Error of the model on the test set.
-- R2_Score: R-squared score of the model on the test set.
-- Feature_Importance: A markdown table showing the importance of each feature in the model.
-------
-return: A Dagster Output object containing the trained model and its evaluation metrics as metadata.
+    """Train a histogram-based gradient boosting regressor on the engineered bike timeline.
+
+    Parameters
+    ----------
+    dfs_united_with_time_features : pandas.DataFrame
+        Engineered dataset containing feature columns and the target column `total_rentals`.
+
+    Returns
+    -------
+    dagster.Output
+        Dagster Output containing the trained model; metadata includes evaluation metrics and
+        a markdown table of feature importances.
     """
     # Create a copy
     model_df = dfs_united_with_time_features.copy()
@@ -49,7 +51,7 @@ return: A Dagster Output object containing the trained model and its evaluation 
 
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
     
-    # 7. Train the mathematical model
+    # Train the mathematical model
     tree_model = HistGradientBoostingRegressor(max_iter=1000, random_state=42)
     tree_model.fit(X_train, y_train)
     

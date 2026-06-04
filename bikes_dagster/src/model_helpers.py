@@ -2,8 +2,23 @@ from sklearn.inspection import permutation_importance
 import pandas as pd
 
 def analyze_feature_importance(model, X_test: pd.DataFrame, y_test: pd.Series) -> pd.DataFrame:
-    """Calculates feature importance without printing to the console."""
-    
+    """Compute permutation-based feature importances.
+
+    Parameters
+    ----------
+    model : estimator
+        Fitted estimator with a `predict` method.
+    X_test : pandas.DataFrame
+        Test features used to compute importances.
+    y_test : array-like
+        True target values for `X_test`.
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame with columns `Feature` and `Importance_Score`, sorted by importance descending.
+    """
+
     result = permutation_importance(
         model, 
         X_test, 

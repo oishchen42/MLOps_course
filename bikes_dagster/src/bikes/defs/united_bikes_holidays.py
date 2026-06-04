@@ -10,6 +10,20 @@ import dagster as dg
     }
 )
 def merged_bikes_with_holidays(united_bike_rentals: pd.DataFrame, holidays: pd.DataFrame) -> pd.DataFrame:
+    """Merge bike rentals with holiday indicators on date.
+
+    Parameters
+    ----------
+    united_bike_rentals : pandas.DataFrame
+        DataFrame of hourly bike rental aggregates containing `datetime`.
+    holidays : pandas.DataFrame
+        Holidays DataFrame containing `datetime` and `is_holiday`.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Merged DataFrame with an `is_holiday` boolean column.
+    """
 
     # 1. Create matching date-only keys for both dataframes
     united_bike_rentals['date_key'] = united_bike_rentals['datetime'].dt.date

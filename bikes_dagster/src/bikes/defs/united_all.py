@@ -14,8 +14,20 @@ import time_feature_engin_helpers as tf
     }
 )
 def dfs_united_with_time_features(merged_bikes_with_holidays: pd.DataFrame, weather: pd.DataFrame) -> pd.DataFrame:
-    # 1. Create matching date-only keys for both dataframes
-    """Merges direct and registered bike rentals into a single master tracking dataset."""
+    """Produce feature-engineered dataset by merging rentals with weather and adding time features.
+
+    Parameters
+    ----------
+    merged_bikes_with_holidays : pandas.DataFrame
+        Bike rentals merged with holiday indicators.
+    weather : pandas.DataFrame
+        Weather observations indexed by `datetime`.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Feature-engineered DataFrame with lag and rolling features added.
+    """
     
     merged_bikes_with_holidays = merged_bikes_with_holidays.sort_values('datetime')
     weather = weather.sort_values('datetime')

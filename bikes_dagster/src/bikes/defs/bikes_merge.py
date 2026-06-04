@@ -13,7 +13,20 @@ def united_bike_rentals(
     direct_pickup_bike_rentals: pd.DataFrame, 
     registered_bike_rentals: pd.DataFrame
 ) -> pd.DataFrame:
-    """Merges direct and registered bike rentals into a single master tracking dataset."""
+    """Merge direct and registered rentals into a single ledger and compute totals.
+
+    Parameters
+    ----------
+    direct_pickup_bike_rentals : pandas.DataFrame
+        Hourly aggregated direct pickup rentals with `direct_count`.
+    registered_bike_rentals : pandas.DataFrame
+        Hourly aggregated registered rentals with `registered_count`.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Merged DataFrame with `direct_count`, `registered_count`, and `total_rentals`.
+    """
 
     merged_df = pd.merge(
         direct_pickup_bike_rentals,

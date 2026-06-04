@@ -18,10 +18,23 @@ import model_helpers as mh
     }
 )
 def base_linear_model(dfs_united_with_time_features: pd.DataFrame):
+    """Train a linear regression on the engineered bike timeline.
+
+    Parameters
+    ----------
+    dfs_united_with_time_features : pandas.DataFrame
+        Engineered dataset containing feature columns and the target column `total_rentals`.
+
+    Returns
+    -------
+    dagster.Output
+        Dagster Output containing the trained model and fitted preprocessing objects; metadata includes
+        evaluation metrics and a markdown table of feature importances.
+    """
     # Create a copy
     model_df = dfs_united_with_time_features.copy()
 
-# Convert the text string back into a mathematical datetime object
+    # Convert the text string back into a mathematical datetime object
     model_df['datetime'] = pd.to_datetime(model_df['datetime'])
     
     # Convert boolean switches

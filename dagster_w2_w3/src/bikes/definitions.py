@@ -3,7 +3,7 @@ from pathlib import Path
 import dagster as dg
 import pandas as pd
 
-from .defs import first_stage, bikes_merge, united_bikes_holidays, united_all, machine_data_prep, models_linear_prep, models_linear_reg, models_xgb_reg
+from .defs import first_stage, bikes_merge, united_bikes_holidays, united_all, machine_data_prep, models_linear_prep, models_linear_reg, models_xgb_reg, models_xgboost
 
 class LocalCSVIOManager(dg.ConfigurableIOManager):
     base_dir: str
@@ -35,7 +35,8 @@ all_assets = dg.load_assets_from_modules([
     machine_data_prep,
     models_linear_prep,
     models_linear_reg,
-    models_xgb_reg
+    models_xgb_reg,
+    models_xgboost
 ])
 
 defs = dg.Definitions(

@@ -9,3 +9,5 @@ __pycache__/
 *.log
 /mlops
 /exmpl
+test_lake.py
+mlflow_test*

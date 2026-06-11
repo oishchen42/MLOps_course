@@ -4,6 +4,8 @@ requires-python = ">=3.10,<3.15"
 version = "0.1.0"
 dependencies = [
     "dagster==1.13.6",
+    "lakefs>=0.16.0",
+    "lakefs-spec>=0.14.0",
     "mlflow>=3.13.0",
     "pandas>=2.3.3",
     "scikit-learn>=1.7.2",

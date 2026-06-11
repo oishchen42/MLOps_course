@@ -16,7 +16,7 @@ import test_train_helpers as th
     auto_materialize_policy=dg.AutoMaterializePolicy.eager(),
     ins={"chronological_data_split": dg.AssetIn()}
 )
-def advanced_xgboost_model(chronological_data_split: dict):
+def xgb_model(chronological_data_split: dict):
     data = th.preprocess_train_test(
         chronological_data_split=chronological_data_split,
     )
@@ -24,10 +24,11 @@ def advanced_xgboost_model(chronological_data_split: dict):
     X_train = data["X_train"]
     y_test = data["y_test"]
     X_test = data["X_test"]
-    
+
+    mlflow.set_tracking_uri("http://127.0.0.1:5000")
     mlflow.set_experiment("Bike Rentals Predictions")
     # mlflow.xgboost.autolog()
-    with mlflow.start_run() as run:
+    with mlflow.start_run(run_name="XGBoost Run") as run:
         mlflow.set_tag("model_type", "XGBoost Regressor")
         xgb_model = xgb.XGBRegressor(n_estimators=1000, random_state=42, early_stopping_rounds=20)
         xgb_model.fit(
@@ -43,7 +44,7 @@ def advanced_xgboost_model(chronological_data_split: dict):
         r2 = r2_score(y_test, predictions)
 
         # Capture the exact column names and datatypes
-        signature = infer_signature(X_test, predictions)
+        signature = mlflow.models.signature.infer_signature(X_train, predictions)
 
         mlflow.xgboost.log_model(
             xgb_model=xgb_model,

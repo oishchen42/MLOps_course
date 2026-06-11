@@ -5,6 +5,7 @@ __pycache__/
 
 /.tmp_dagster_home_tqjveveo
 /mlruns
+/data
 
 # C extensions
 *.so

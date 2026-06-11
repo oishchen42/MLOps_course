@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 import mlflow
 import pandas as pd
+import os
 
 # 1. Define the exact input schema your model expects
 class BikeRentalInput(BaseModel):
@@ -18,7 +19,10 @@ class BikeRentalInput(BaseModel):
 app = FastAPI(title="Bike Rentals Prediction API")
 
 # 2. Tell the API where the MLflow server is located
-mlflow.set_tracking_uri("http://127.0.0.1:5000")
+
+# Dynamically fetch the URI from Docker, or fallback to localhost if running outside Docker
+tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")
+mlflow.set_tracking_uri(tracking_uri)
 
 # 3. Load the model dynamically from the registry into memory when the server starts
 model_uri = "models:/Bike_Rentals_Champion@production"

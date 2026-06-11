@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  # The MLflow Tracking Server
+  mlflow:
+    image: ghcr.io/mlflow/mlflow:latest
+    ports:
+      - "5001:5000"
+    command: mlflow server --backend-store-uri sqlite:////mlflow/mlflow.db --default-artifact-root /mlflow/artifacts --host 0.0.0.0
+    volumes:
+      - mlflow_data:/mlflow
+    networks:
+      - mlops_network
+
+  # The lakeFS Server (using local blockstore for simplicity)
+  lakefs:
+    image: treeverse/lakefs:latest
+    command: run
+    user: "root"
+    ports:
+      - "8000:8000"
+    environment:
+      - LAKEFS_BLOCKSTORE_TYPE=local
+      - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs/data
+      - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=super_secret_encryption_key_123
+      - LAKEFS_DATABASE_TYPE=local
+    volumes:
+      - lakefs_data:/home/lakefs/data
+    networks:
+      - mlops_network
+
+  # FastAPI Model Serving Endpoint
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.api
+    ports:
+      - "8080:8080"
+    environment:
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    depends_on:
+      - mlflow
+    networks:
+      - mlops_network
+
+  # Dagster Pipeline
+  dagster:
+    build:
+      context: .
+      dockerfile: Dockerfile.dagster
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    environment:
+      # These override .env file to use Docker's internal network
+      - LAKECTL_SERVER_ENDPOINT_URL=http://lakefs:8000
+      - MLFLOW_TRACKING_URI=http://mlflow:5000
+    depends_on:
+      - lakefs
+      - mlflow
+    networks:
+      - mlops_network
+
+# Persistent storage so you don't lose data when containers stop
+volumes:
+  mlflow_data:
+  lakefs_data:
+
+# Isolated internal network for the containers to talk to each other
+networks:
+  mlops_network:
+    driver: bridge

@@ -1,0 +1,20 @@
+FROM python:3.13-slim
+
+ENV PYTHONUNBUFFERED=1
+WORKDIR /opt/dagster/app
+
+RUN pip install uv
+
+COPY pyproject.toml ./
+COPY src/ ./src/
+COPY data/ ./data/
+
+RUN uv pip install --system dagster dagster-webserver pandas scikit-learn xgboost mlflow lakefs-spec
+
+ENV PYTHONPATH=/opt/dagster/app/src
+
+EXPOSE 3000
+
+ENV DAGSTER_HOME=/opt/dagster/app
+
+CMD ["dagster", "dev", "-h", "0.0.0.0", "-p", "3000"]

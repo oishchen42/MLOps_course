@@ -1,100 +1,129 @@
 # 🚀 MLOps Infrastructure Project
 
-This project provides a comprehensive, fully Dockerized MLOps environment designed to streamline the machine learning lifecycle. It integrates best-in-class tools for data versioning, orchestration, experiment tracking, and model serving.
+A comprehensive, fully Dockerized MLOps environment designed to streamline the machine learning lifecycle. This project integrates best-in-class tools for data versioning, orchestration, experiment tracking, and model serving into a seamless, production-ready stack.
+
+---
 
 ## ✨ Features
 
--   **Data Versioning:** Manage your datasets with Git-like semantics using **lakeFS**.
--   **Orchestration:** Define, schedule, and monitor data pipelines with **Dagster**.
--   **Experiment Tracking:** Log experiments, compare runs, and manage models with **MLflow**.
--   **Model Serving:** Deploy and serve your models as a REST API using **FastAPI**.
--   **Reproducibility:** Dockerized services ensure a consistent environment from development to production.
+- **📦 Automated Data Versioning** — Manage datasets with Git-like semantics using **lakeFS**. Data is automatically loaded and versioned upon startup.
+- **⚙️ Orchestration** — Define, schedule, and monitor data pipelines with **Dagster**.
+- **📊 Experiment Tracking** — Log experiments, compare runs, and manage models with **MLflow**.
+- **🔌 Model Serving** — Deploy and serve your models as a REST API using **FastAPI**.
+- **🔄 Reproducibility** — Dockerized services ensure a consistent environment from development to production.
+
+---
 
 ## 🏗️ Infrastructure Map
 
-Here are the services included in this MLOps stack:
-
 | Service | Host Port | Internal Port | Purpose |
-| :--- | :--- | :--- | :--- |
-| 🐙 **Dagster** | `3000` | `3000` | Data orchestration |
-| 🌊 **lakeFS** | `8000` | `8000` | Data versioning |
-| 🧪 **MLflow** | `5001` | `5000` | Experiment tracking |
-|  FastAPI | `8080` | `8080` | Model serving |
+|:---:|:---:|:---:|---|
+| 🐙 Dagster | `3000` | `3000` | Data orchestration and pipeline execution |
+| 🌊 lakeFS | `8000` | `8000` | Data versioning and storage |
+| 🧪 MLflow | `5001` | `5000` | Experiment tracking and model registry |
+| 🚀 FastAPI | `8080` | `8080` | REST API for real-time model serving |
 
-## 🚀 Quickstart Guide
+---
 
-Follow these steps to get the MLOps environment up and running.
+## 🚀 Quick Start
 
-### 1. Environment Setup
+Follow these steps to spin up the fully automated MLOps environment.
 
-First, run the setup script from the project root. This will download the necessary data, install `uv` (a fast Python package installer), and generate the `.env` configuration file.
+### Step 1: Environment Setup
+
+Run the setup script from the project root. This prepares your local directories, downloads necessary data, installs `uv`, and generates the required `.env` configuration file containing your lakeFS keys.
 
 ```bash
 bash setup.sh
 ```
 
-### 2. Configure lakeFS Credentials
+### Step 2: Build and Launch the Stack
 
-1.  Navigate to the lakeFS UI at [http://127.0.0.1:8000](http://127.0.0.1:8000).
-2.  Create an admin user.
-3.  Go to the **Administration** > **Create Access Key** section and generate new credentials.
-4.  Copy the **Access Key ID** and **Secret Access Key**.
-5.  Open the `.env` file in the project root and paste your credentials:
-
-```dotenv
-LAKECTL_CREDENTIALS_ACCESS_KEY_ID="<YOUR_ACCESS_KEY_ID>"
-LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY="<YOUR_SECRET_ACCESS_KEY>"
-```
-
-### 3. Launch the Services
-
-Bring up the entire stack using Docker Compose. The `-d` flag runs the containers in detached mode.
-
-```bash
-docker compose up -d
-```
-
-Once the services are running, you can access them at their respective ports.
-
----
-
-## 🛠️ Troubleshooting
-
-Here are solutions to some common issues you might encounter.
-
-### Permission Errors with lakeFS
-
-If the `lakefs` container exits with a `path provided is not writable` error, ensure the `user: "root"` configuration is present in your `docker-compose.yaml` under the `lakefs` service definition.
-
-### Dagster "Module Not Found" Error
-
-If Dagster reports `No module named 'bikes'`, you need to ensure the Python path is correctly set in `Dockerfile.dagster`. Add the following line to your Dockerfile:
-
-```Dockerfile
-ENV PYTHONPATH=/opt/dagster/app/src
-```
-
-This tells Python to look for modules in your `src` directory.
-
-### Docker Cache Issues
-
-If your code changes (e.g., in `api.py` or other source files) are not being reflected in the running containers, you may need to rebuild the images without using the cache.
+Bring up the entire infrastructure using Docker Compose. The configuration uses an initialization container (`lakefs-setup`) to automatically create your data repository and upload the raw CSV files.
 
 ```bash
 docker compose build --no-cache
 docker compose up -d
 ```
 
-### API Connection Errors to MLflow
+Monitor the automated data upload:
 
-If the `api` container fails to connect to MLflow, it's likely because the MLflow tracking URI is hardcoded to a `localhost` address. Inside a Docker network, containers must use the service name as the hostname.
+```bash
+docker compose logs -f lakefs-setup
+```
 
-Ensure your `api.py` reads the tracking URI from an environment variable:
+⏳ **Wait until you see `Data upload complete` before proceeding.**
 
-```python
-import os
+### Step 3: Train the Champion Model
 
-# Default to the Docker service name `mlflow` if the env var is not set
-tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
-mlflow.set_tracking_uri(tracking_uri)
+Before the API can serve predictions, execute the data pipeline to train and evaluate the models.
+
+1. **Open the Dagster UI** at http://127.0.0.1:3000
+
+2. **Trigger the pipeline** — Navigate to your assets and click **Materialize All** to trigger the `__ASSET_JOB`
+
+3. **Monitor training** — Dagster will process the lakeFS data, train three models:
+   - Base Linear Regression
+   - XGBoost
+   - HistGradientBoosting
+   
+   The best performing model will be automatically registered in MLflow under the `champion` alias.
+
+4. **(Optional) View metrics** — Check training metrics and the model registry in the MLflow UI at http://127.0.0.1:5001
+
+### Step 4: Serve Predictions
+
+The FastAPI service automatically monitors MLflow. Once Dagster registers the champion model, the API is ready to accept HTTP POST requests.
+
+**Endpoint:** http://127.0.0.1:8080/predict
+
+If the API container was started before the model was trained, restart it to load the fresh model into memory:
+
+```bash
+docker compose restart api
+```
+
+---
+
+## 🛠️ Troubleshooting
+
+### 503 Service Unavailable (FastAPI)
+
+**Problem:** POST request to the API returns a 503 error stating "Model is not yet trained and loaded".
+
+**Solution:** Your Dagster pipeline has not yet successfully registered a model to the `champion` alias in MLflow. Run the pipeline in Dagster first (Step 3).
+
+### 401 Unauthorized (lakeFS Authentication)
+
+**Problem:** Dagster throws 401 Unauthorized errors when trying to read `lakefs://bike-rentals/...`
+
+**Cause:** Your container volumes are out of sync with your `.env` keys.
+
+**Solution:** Force a clean reset of the database and credentials:
+
+```bash
+docker compose down -v
+docker compose build --no-cache
+docker compose up -d
+```
+
+### Module Not Found (Dagster)
+
+**Problem:** Dagster reports `No module named 'bikes'`
+
+**Solution:** Ensure the Python path is correctly mapped in your `Dockerfile.dagster`:
+
+```dockerfile
+ENV PYTHONPATH=/opt/dagster/app/src
+```
+
+### Docker Cache Issues
+
+**Problem:** Your Python code changes (e.g., in `api.py` or Dagster definitions) are not reflecting in the running environment.
+
+**Solution:** Rebuild the images explicitly bypassing the cache:
+
+```bash
+docker compose build --no-cache
+docker compose up -d
 ```

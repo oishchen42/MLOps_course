@@ -1,5 +1,6 @@
 services:
-  # 1. LakeFS Server (Initializes via start_lakefs.sh)
+  # LakeFS - our data versioning layer. It acts like Git for data files.
+  # We wait for it to be healthy before starting anything else.
   lakefs:
     build:
       context: .
@@ -24,10 +25,10 @@ services:
       timeout: 5s
       retries: 15
 
-  # 2. LakeFS Setup & Data Upload (Runs once, then exits)
-  # 2. LakeFS Setup & Data Upload (Runs once, then exits)
+  # This container handles one-time setup: creating the repo and loading our CSV files.
+  # Once it finishes uploading everything, it shuts down automatically.
   lakefs-setup:
-    image: treeverse/lakectl:latest  # Changed to lakectl
+    image: treeverse/lakectl:latest  # Using the lakeFS CLI tool to manage repos and uploads
     user: "root" 
     env_file:
       - .env
@@ -41,8 +42,8 @@ services:
     networks:
       - mlops_network
   
-  # 3. MLflow Tracking Server
-# 3. MLflow Tracking Server
+  # MLflow tracks all our model experiments, parameters, metrics, and artifacts.
+  # We use this to compare different models and pick the best one.
   mlflow:
     image: ghcr.io/mlflow/mlflow:latest
     ports:
@@ -53,7 +54,8 @@ services:
     networks:
       - mlops_network
 
-  # 4. FastAPI Model Serving
+  # FastAPI service that exposes our trained model as a REST API.
+  # Other services can hit /predict to get bike rental forecasts.
   api:
     build:
       context: .
@@ -66,7 +68,8 @@ services:
       - mlflow
     networks:
       - mlops_network
-
+Dagster orchestrates the entire ML pipeline. We don't start it until
+  # the data is fully uploaded to lakeFS to avoid any missing dependencies.
   # 5. Dagster (Waits for data upload to finish completely)
   dagster:
     build:

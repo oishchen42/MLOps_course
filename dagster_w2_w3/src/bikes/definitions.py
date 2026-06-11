@@ -15,7 +15,7 @@ class LocalCSVIOManager(dg.ConfigurableIOManager):
     def handle_output(self, context, obj: pd.DataFrame):
         file_path = self._get_path(context)
         
-        # os is now imported at the top, so this will work
+        # Make sure the directory exists before we try to write the file
         os.makedirs(file_path.parent, exist_ok=True)
         
         obj.to_csv(file_path, index=False)

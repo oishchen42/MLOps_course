@@ -33,7 +33,8 @@ except Exception as e:
 
 @app.post("/predict")
 def predict(data: BikeRentalInput):
-    # Safety check if the API is pinged before Dagster registers a champion
+    # Make sure we have a trained model before trying to make predictions.
+    # If someone hits this endpoint before running the pipeline, we need to let them know.
     if model is None:
         raise HTTPException(
             status_code=503, 

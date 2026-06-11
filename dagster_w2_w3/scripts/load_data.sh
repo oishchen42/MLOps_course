@@ -13,7 +13,7 @@ echo "LakeFS is healthy!"
 
 echo "Ensuring 'bike-rentals' repository exists..."
 if ! lakectl repo list | grep -q "bike-rentals"; then
-  # FIX: local://data is now a positional argument, not a flag
+  # Create the repo. Note: the storage path is a positional arg after the repo name
   lakectl repo create lakefs://bike-rentals local://data --default-branch main
 else
   echo "Repository already exists."

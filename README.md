@@ -1,69 +1,100 @@
-# Production Project: MLOps and Dagster
+# 🚀 MLOps Infrastructure Project
 
-This repository collects LEVEL3 workshop artifacts and demonstrates a reproducible MLOps workflow using notebooks and a Dagster project for a bike rentals use case.
+This project provides a comprehensive, fully Dockerized MLOps environment designed to streamline the machine learning lifecycle. It integrates best-in-class tools for data versioning, orchestration, experiment tracking, and model serving.
 
-## What you'll learn
+## ✨ Features
 
-- Core data engineering: ingestion, cleaning, and hourly aggregation.
-- Feature engineering: time-based lags and rolling statistics, weather and holiday joins.
-- Modeling & evaluation: linear and histogram-gradient-boosting regression, RMSE/MAE/R2 reporting, and permutation feature importance.
-- Orchestration: packaging the pipeline as Dagster assets and exposing model metadata for inspection.
+-   **Data Versioning:** Manage your datasets with Git-like semantics using **lakeFS**.
+-   **Orchestration:** Define, schedule, and monitor data pipelines with **Dagster**.
+-   **Experiment Tracking:** Log experiments, compare runs, and manage models with **MLflow**.
+-   **Model Serving:** Deploy and serve your models as a REST API using **FastAPI**.
+-   **Reproducibility:** Dockerized services ensure a consistent environment from development to production.
 
-## Notebooks
+## 🏗️ Infrastructure Map
 
-- All interactive steps and experiments live in the `notebook/` folder. Key notebooks:
-	- `notebook/week1_titanic1.ipynb` — Titanic EDA
-	- `notebook/week1_titanic2.ipynb` — Classification experiments
-	- `notebook/week2_bikes1.ipynb` — Bike pipeline and feature engineering
-    - `notebook/week3_model_training.ipynb` — Workflow with the different models: 'Linear Regression and HistGradientBoostingRegressor'
+Here are the services included in this MLOps stack:
 
-## Weekly breakdown
+| Service | Host Port | Internal Port | Purpose |
+| :--- | :--- | :--- | :--- |
+| 🐙 **Dagster** | `3000` | `3000` | Data orchestration |
+| 🌊 **lakeFS** | `8000` | `8000` | Data versioning |
+| 🧪 **MLflow** | `5001` | `5000` | Experiment tracking |
+|  FastAPI | `8080` | `8080` | Model serving |
 
-- **Week 1 — Classification & EDA**
-	- Goals: exploratory data analysis, baseline classifiers, metric interpretation.
-	- Artifacts: Titanic notebooks, basic preprocessing code.
+## 🚀 Quickstart Guide
 
-- **Week 2 — Bike Data Pipeline & Feature Engineering**
-	- Goals: ingest bike and weather data, aggregate hourly, join holidays, and produce time-window features.
-	- Artifacts: data ingestion scripts, `mlops/week-2/data` CSVs, feature-engineered dataset in `dagster_w2_w3/src/bikes/defs`.
+Follow these steps to get the MLOps environment up and running.
 
-- **Week 3 — Modeling, Evaluation & Dagster**
-	- Goals: train regression models, compute RMSE/MAE/R2, produce feature-importance reports, and wrap training as Dagster assets.
-	- Artifacts: model assets in `dagster_w2_w3/src/bikes/defs` and evaluation metadata attached to Dagster outputs.
+### 1. Environment Setup
 
-## Data sources
-
-- Titanic dataset: [mlops/week-1/data/titanic.csv](mlops/week-1/data/titanic.csv)
-- Bike rentals datasets: [mlops/week-2/data/direct_pickup_bike_rentals.csv](mlops/week-2/data/direct_pickup_bike_rentals.csv), [mlops/week-2/data/registered_bike_rentals.csv](mlops/week-2/data/registered_bike_rentals.csv), [mlops/week-2/data/weather.csv](mlops/week-2/data/weather.csv), [mlops/week-2/data/holidays.csv](mlops/week-2/data/holidays.csv)
-
-## Dagster pipeline (bike rentals)
-
-The Dagster project in [dagster_w2_w3/README.md](dagster_w2_w3/README.md) builds assets from the week-2 bike rental CSVs and produces a feature-engineered dataset. Asset definitions live in `dagster_w2_w3/src/bikes/defs/`.
-
-### IMPORTANT:
-* add to the root with this project mlops directory form the ARKADIA's LEVEL3 repository, as all the datasets are taken from there
-
-### Run Dagster locally
+First, run the setup script from the project root. This will download the necessary data, install `uv` (a fast Python package installer), and generate the `.env` configuration file.
 
 ```bash
-cd bikes_dagster
-# Option 1: uv
-uv sync
-source .venv/bin/activate
-dg dev
+bash setup.sh
 ```
 
-Open http://localhost:3000 in your browser.
+### 2. Configure lakeFS Credentials
 
-### Alternative: pip
+1.  Navigate to the lakeFS UI at [http://127.0.0.1:8000](http://127.0.0.1:8000).
+2.  Create an admin user.
+3.  Go to the **Administration** > **Create Access Key** section and generate new credentials.
+4.  Copy the **Access Key ID** and **Secret Access Key**.
+5.  Open the `.env` file in the project root and paste your credentials:
+
+```dotenv
+LAKECTL_CREDENTIALS_ACCESS_KEY_ID="<YOUR_ACCESS_KEY_ID>"
+LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY="<YOUR_SECRET_ACCESS_KEY>"
+```
+
+### 3. Launch the Services
+
+Bring up the entire stack using Docker Compose. The `-d` flag runs the containers in detached mode.
 
 ```bash
-cd bikes_dagster
-python3 -m venv .venv
-source .venv/bin/activate
-pip install -e ".[dev]"
-dg dev
+docker compose up -d
 ```
 
+Once the services are running, you can access them at their respective ports.
 
+---
 
+## 🛠️ Troubleshooting
+
+Here are solutions to some common issues you might encounter.
+
+### Permission Errors with lakeFS
+
+If the `lakefs` container exits with a `path provided is not writable` error, ensure the `user: "root"` configuration is present in your `docker-compose.yaml` under the `lakefs` service definition.
+
+### Dagster "Module Not Found" Error
+
+If Dagster reports `No module named 'bikes'`, you need to ensure the Python path is correctly set in `Dockerfile.dagster`. Add the following line to your Dockerfile:
+
+```Dockerfile
+ENV PYTHONPATH=/opt/dagster/app/src
+```
+
+This tells Python to look for modules in your `src` directory.
+
+### Docker Cache Issues
+
+If your code changes (e.g., in `api.py` or other source files) are not being reflected in the running containers, you may need to rebuild the images without using the cache.
+
+```bash
+docker compose build --no-cache
+docker compose up -d
+```
+
+### API Connection Errors to MLflow
+
+If the `api` container fails to connect to MLflow, it's likely because the MLflow tracking URI is hardcoded to a `localhost` address. Inside a Docker network, containers must use the service name as the hostname.
+
+Ensure your `api.py` reads the tracking URI from an environment variable:
+
+```python
+import os
+
+# Default to the Docker service name `mlflow` if the env var is not set
+tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
+mlflow.set_tracking_uri(tracking_uri)
+```

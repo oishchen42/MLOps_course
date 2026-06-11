@@ -8,6 +8,10 @@ git clone https://github.com/arkadiahn/LEVEL3-projects temp_mlops
 
 cp -R temp_mlops/mlops ~/mlops_course/.
 
+mkdir -p data
+
+cp ~/mlops_course/mlops/week-2/data/*.csv ./data/
+
 cd dagster_w2_w3
 
 rm -rf temp_mlops

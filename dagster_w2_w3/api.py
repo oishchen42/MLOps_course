@@ -1,10 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 import mlflow
 import pandas as pd
 import os
 
-# 1. Define the exact input schema your model expects
 class BikeRentalInput(BaseModel):
     is_weekend: int
     direct_count: float
@@ -18,23 +17,30 @@ class BikeRentalInput(BaseModel):
 
 app = FastAPI(title="Bike Rentals Prediction API")
 
-# 2. Tell the API where the MLflow server is located
-
-# Dynamically fetch the URI from Docker, or fallback to localhost if running outside Docker
 tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://127.0.0.1:5000")
 mlflow.set_tracking_uri(tracking_uri)
 
-# 3. Load the model dynamically from the registry into memory when the server starts
-model_uri = "models:/Bike_Rentals_Champion@production"
-model = mlflow.pyfunc.load_model(model_uri)
+model_name = "Bike_Rentals_Predictor"
+alias = "champion"
+model_uri = f"models:/{model_name}@{alias}"
 
-# 4. Expose the prediction endpoint
+try:
+    model = mlflow.pyfunc.load_model(model_uri)
+    print(f"Successfully loaded model: {model_uri}")
+except Exception as e:
+    print(f"Warning: Model not found. Train the model via Dagster first. Error: {e}")
+    model = None
+
 @app.post("/predict")
 def predict(data: BikeRentalInput):
-    # Convert the incoming JSON payload into a Pandas DataFrame
+    # Safety check if the API is pinged before Dagster registers a champion
+    if model is None:
+        raise HTTPException(
+            status_code=503, 
+            detail="Model is not yet trained and loaded. Please run the Dagster pipeline first."
+        )
+
     input_df = pd.DataFrame([data.model_dump()])
-    
-    # Generate the prediction
     prediction = model.predict(input_df)
     
     return {

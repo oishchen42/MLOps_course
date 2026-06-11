@@ -8,6 +8,7 @@ import dagster as dg
 import pandas as pd
 import model_helpers as mh
 import mlflow
+import os
 
 @dg.asset(
     name="base_linear_model",
@@ -39,7 +40,9 @@ def base_linear_model(linear_model_preprocessing: dict):
     y_test = linear_model_preprocessing["y_test"]
     scaler = linear_model_preprocessing["scaler"]
     
-    mlflow.set_tracking_uri("http://127.0.0.1:5000")
+    tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
+    mlflow.set_tracking_uri(tracking_uri)
+
     mlflow.set_experiment("Bike Rentals Predictions")
 
     mlflow.sklearn.autolog()  # Automatically logs parameters, metrics, and the model itself

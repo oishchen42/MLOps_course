@@ -5,6 +5,7 @@ import model_helpers as mh
 import pandas as pd
 import test_train_helpers as th
 import mlflow
+import os
 
 @dg.asset(
     name="hist_gradient_boosting_model",
@@ -24,7 +25,9 @@ def hist_gradient_boosting_model(chronological_data_split: dict):
     y_test = data["y_test"]
     X_test = data["X_test"]
     
-    mlflow.set_tracking_uri("http://127.0.0.1:5000")
+    tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
+    mlflow.set_tracking_uri(tracking_uri)
+
     mlflow.set_experiment("Bike Rentals Predictions")
     
     mlflow.sklearn.autolog()  # Automatically logs parameters, metrics, and the model itself

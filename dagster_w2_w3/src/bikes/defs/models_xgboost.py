@@ -7,6 +7,7 @@ from sklearn.metrics import root_mean_squared_error, mean_absolute_error, r2_sco
 
 import model_helpers as mh 
 import test_train_helpers as th
+import os
 
 @dg.asset(
     name="xgb_model",
@@ -25,7 +26,10 @@ def xgb_model(chronological_data_split: dict):
     y_test = data["y_test"]
     X_test = data["X_test"]
 
-    mlflow.set_tracking_uri("http://127.0.0.1:5000")
+    tracking_uri = os.getenv("MLFLOW_TRACKING_URI", "http://mlflow:5000")
+    mlflow.set_tracking_uri(tracking_uri)
+    print(f"DEBUG: Using MLflow tracking URI: {tracking_uri}")
+
     mlflow.set_experiment("Bike Rentals Predictions")
     # mlflow.xgboost.autolog()
     with mlflow.start_run(run_name="XGBoost Run") as run:

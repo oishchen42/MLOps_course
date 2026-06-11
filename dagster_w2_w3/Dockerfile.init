@@ -1,0 +1,22 @@
+FROM alpine:latest
+
+# Install required tools: curl, bash, and lakectl
+RUN apk add --no-cache curl bash
+
+# Download and install lakectl (LakeFS CLI)
+RUN curl -LO https://github.com/treeverse/lakeFS/releases/download/v1.30.0/lakefs_1.30.0_linux_amd64.tar.gz \
+    && tar -xzf lakefs_1.30.0_linux_amd64.tar.gz \
+    && mv lakefs /usr/local/bin/lakectl \
+    && rm lakefs_1.30.0_linux_amd64.tar.gz
+
+# Copy the setup script
+COPY scripts/setup_lakefs.sh /setup.sh
+RUN chmod +x /setup.sh
+
+# Default environment variables (can be overridden)
+ENV LAKECTL_SERVER_ENDPOINT_URL="http://lakefs:8000"
+ENV LAKECTL_CREDENTIALS_ACCESS_KEY_ID="AKIAIOSFODNN7EXAMPLE"
+ENV LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+
+# Run the shell script
+CMD ["/bin/sh", "/setup.sh"]

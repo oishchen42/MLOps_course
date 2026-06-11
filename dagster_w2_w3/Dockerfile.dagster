@@ -9,12 +9,11 @@ COPY pyproject.toml ./
 COPY src/ ./src/
 COPY data/ ./data/
 
-RUN uv pip install --system dagster dagster-webserver pandas scikit-learn xgboost mlflow lakefs-spec
+# Removed the manual .lakectl.yaml generation
+RUN uv pip install --system dagster dagster-webserver pandas scikit-learn xgboost mlflow lakefs-spec requests
 
 ENV PYTHONPATH=/opt/dagster/app/src
-
 EXPOSE 3000
-
 ENV DAGSTER_HOME=/opt/dagster/app
 
 CMD ["dagster", "dev", "-h", "0.0.0.0", "-p", "3000"]

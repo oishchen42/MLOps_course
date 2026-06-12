@@ -7,7 +7,7 @@ RUN pip install uv
 
 COPY pyproject.toml ./
 COPY src/ ./src/
-COPY data/ ./data/
+# COPY data/ ./data/
 
 # We set Python path so Dagster can import our custom modules
 RUN uv pip install --system dagster dagster-webserver pandas scikit-learn xgboost mlflow lakefs-spec requests

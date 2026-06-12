@@ -15,6 +15,7 @@ services:
       - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs/data
       - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=super_secret_encryption_key_123
       - LAKEFS_DATABASE_TYPE=local
+      - LAKEFS_DATABASE_LOCAL_PATH=/home/lakefs/data/_metadata
     volumes:
       - lakefs_data:/home/lakefs/data
     networks:
@@ -48,7 +49,7 @@ services:
     image: ghcr.io/mlflow/mlflow:latest
     ports:
       - "5001:5000"
-    command: mlflow server --backend-store-uri sqlite:////mlflow/mlflow.db --default-artifact-root /mlflow/artifacts --host 0.0.0.0 --allowed-hosts "*"
+    command: mlflow server --backend-store-uri sqlite:////mlflow/mlflow.db --default-artifact-root /mlflow/artifacts --host 0.0.0.0 --serve-artifacts --allowed-hosts "*"
     volumes:
       - mlflow_data:/mlflow
     networks:
@@ -68,6 +69,8 @@ services:
       - mlflow
     networks:
       - mlops_network
+    volumes:
+      - mlflow_data:/mlflow
 
   dagster:
     build:
@@ -87,6 +90,8 @@ services:
         condition: service_started
     networks:
       - mlops_network
+    volumes:
+      - mlflow_data:/mlflow
 
 volumes:
   mlflow_data:

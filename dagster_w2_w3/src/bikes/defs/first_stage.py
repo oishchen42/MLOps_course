@@ -8,9 +8,8 @@ import holidays_helpers as hh
 import weather_helpers as wh
 
 def get_lakefs_client():
-    # lakefs-spec ignores unrecognized kwargs like 'username' or 'password'.
-    # By forcefully injecting the credentials into the local process environment,
-    # the underlying SDK automatically picks them up during initialization.
+    # The lakefs library looks for credentials in environment variables.
+    # We set them here so the SDK can find them automatically.
     os.environ["LAKECTL_SERVER_ENDPOINT_URL"] = os.getenv("LAKECTL_SERVER_ENDPOINT_URL", "http://lakefs:8000")
     os.environ["LAKECTL_CREDENTIALS_ACCESS_KEY_ID"] = os.getenv("LAKECTL_CREDENTIALS_ACCESS_KEY_ID", "AKIAIOSFODNN7EXAMPLE")
     os.environ["LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY"] = os.getenv("LAKECTL_CREDENTIALS_SECRET_ACCESS_KEY", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")

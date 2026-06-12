@@ -20,6 +20,6 @@ def add_is_weekend(df: pd.DataFrame) -> pd.DataFrame:
     - Inputs: `df` with a `datetime` column
     - Output: DataFrame with `is_weekend` (True for Saturday/Sunday)
     """
-    # Check if the numerical day of the week is 5 (Sat) or 6 (Sun)
+    # Days 5 and 6 are Saturday and Sunday in pandas (0=Monday, 6=Sunday)
     df['is_weekend'] = (df["datetime"].dt.dayofweek >= 5).astype(int)
     return df

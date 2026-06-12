@@ -33,7 +33,7 @@ def base_linear_model(linear_model_preprocessing: dict):
         Dagster Output containing the trained model and fitted preprocessing objects; metadata includes
         evaluation metrics and a markdown table of feature importances.
     """
-    # Create a copy
+    # Unpack the preprocessed data
     X_train = linear_model_preprocessing["X_train"]
     X_test = linear_model_preprocessing["X_test"]
     y_train = linear_model_preprocessing["y_train"]
@@ -45,15 +45,16 @@ def base_linear_model(linear_model_preprocessing: dict):
 
     mlflow.set_experiment("Bike Rentals Predictions")
 
-    mlflow.sklearn.autolog()  # Automatically logs parameters, metrics, and the model itself
+    # Let MLflow capture all the model parameters and metrics automatically
+    mlflow.sklearn.autolog()
 
     with mlflow.start_run(run_name="Linear Regression Run") as run:
         mlflow.set_tag("model_type", "Linear Regression")
-        # 2. Train the mathematical model
+        # Fit the linear model to the training data
         model = LinearRegression()
         model.fit(X_train, y_train)
         
-        # 3. Evaluate the model
+        # Generate predictions and compute performance metrics
         predictions = model.predict(X_test)
         rmse = root_mean_squared_error(y_test, predictions)
         mae = mean_absolute_error(y_test, predictions)
@@ -65,10 +66,10 @@ def base_linear_model(linear_model_preprocessing: dict):
 
         mlflow_run_url = f"http://127.0.0.1:5000/#/experiments/{run.info.experiment_id}/runs/{run.info.run_id}"
 
-        # 4. Fetch Feature Importance (Assuming mh.analyze_feature_importance exists)
+        # Calculate which features were most important for the model
         importance_df = mh.analyze_feature_importance(model, X_test, y_test)
         
-        # 5. Return the objects and log metadata to the UI
+        # Package the trained model and return detailed metrics
         return dg.Output(
             value=(model, scaler),
             metadata={

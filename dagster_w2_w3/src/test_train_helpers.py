@@ -13,13 +13,12 @@ def preprocess_train_test(
     train_df = chronological_data_split["train"].copy()
     test_df = chronological_data_split["test"].copy()
     
-    # 1. Optional: Apply Cyclical Time (For Linear Models)
+    # If we're training a linear model, convert cyclical features (hour, month) into sine/cosine
     if apply_cyclical:
-        # Assuming apply_cyclical_time is accessible here
         train_df = lh.apply_cyclical_time(train_df)
         test_df = lh.apply_cyclical_time(test_df)
         
-    # 2. Separate Features (X) and Target (y)
+    # Split features and target. Remove identifiers and the target variable from features.
     columns_to_drop = ['datetime', 'direct_count', 'registered_count', 'total_rentals']
     
     y_train = train_df['total_rentals']
@@ -28,11 +27,11 @@ def preprocess_train_test(
     y_test = test_df['total_rentals']
     X_test = test_df.drop(columns=columns_to_drop)
     
-    # 3. Optional: Scale Continuous Features (For Linear Models)
+    # Normalize numerical features if requested (typically for linear models)
     scaler = None
     if features_to_scale is not None:
         scaler = StandardScaler()
-        # Fit ONLY on train data, transform both
+        # Important: Learn scaling params from training data only, then apply to both
         X_train[features_to_scale] = scaler.fit_transform(X_train[features_to_scale])
         X_test[features_to_scale] = scaler.transform(X_test[features_to_scale])
         

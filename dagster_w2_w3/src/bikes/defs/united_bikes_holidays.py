@@ -25,18 +25,18 @@ def merged_bikes_with_holidays(united_bike_rentals: pd.DataFrame, holidays: pd.D
         Merged DataFrame with an `is_holiday` boolean column.
     """
 
-    # 1. Create matching date-only keys for both dataframes
+    # Extract just the date (without time) from both dataframes to match on
     united_bike_rentals['date_key'] = united_bike_rentals['datetime'].dt.date
     holidays['date_key'] = holidays['datetime'].dt.date
 
     holiday_subset = holidays[['date_key', 'is_holiday']]
-    # 3. Perform a left join using our normalized date key
+    # Join holiday info to rentals, keeping all rental records even if holiday info is missing
     merged_df = pd.merge(united_bike_rentals, holiday_subset, on='date_key', how='left')
 
-    # 4. Fill the unfulfilled NaN spaces with False
+    # Fill missing values (non-holiday days) with 0
     merged_df['is_holiday'] = merged_df['is_holiday'].fillna(0).astype(int)
 
-    # 5. Drop the temporary key so it doesn't clutter our final output
+    # Remove the temporary date key since we don't need it anymore
     merged_df = merged_df.drop(columns=['date_key'])
 
     return merged_df

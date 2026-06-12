@@ -35,12 +35,12 @@ def united_bike_rentals(
         how='outer'
     )
 
-    # Clean and sum
+    # Fill missing values and compute the total
     merged_df['direct_count'] = merged_df['direct_count'].fillna(0)
     merged_df['registered_count'] = merged_df['registered_count'].fillna(0)
     merged_df['total_rentals'] = merged_df['direct_count'] + merged_df['registered_count']
     
-    # Sort chronologically to make downstream EDA and modeling easier
+    # Keep data in chronological order for time-series analysis
     merged_df = merged_df.sort_values('datetime').reset_index(drop=True)
 
     return merged_df

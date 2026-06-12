@@ -15,10 +15,10 @@ def engineer_time_features(df: pd.DataFrame) -> pd.DataFrame:
     """
     df_engineered = df.copy()
 
-    # Sort strictly by time to ensure shifts work correctly
+    # Time-series shifts only work correctly when data is sorted chronologically
     df_engineered = df_engineered.sort_values('datetime').reset_index(drop=True)
 
-    # Create the lag and rolling memory features
+    # Extract temporal features and create lagged features
     df_engineered['datetime'] = pd.to_datetime(df_engineered['datetime'])
     df_engineered['hour'] = df_engineered['datetime'].dt.hour
     df_engineered['month'] = df_engineered['datetime'].dt.month
@@ -28,7 +28,7 @@ def engineer_time_features(df: pd.DataFrame) -> pd.DataFrame:
     history_df = df_engineered[['datetime', 'total_rentals']].copy()
     history_df = history_df.rename(columns={'total_rentals': 'rentals_7d_ago'})
 
-    # Drop the empty rows created by shifting
+    # Find historical values from 7 days ago by joining on approximate datetime match
     df_engineered = pd.merge_asof(
         left=df_engineered,
         right=history_df,
@@ -38,7 +38,7 @@ def engineer_time_features(df: pd.DataFrame) -> pd.DataFrame:
         suffixes=('', '_drop')
     )
     
-    # 5. Clean up the temporary math columns and drop the initial rows with NaNs
+    # Remove temporary columns and drop rows with missing values from lagging
     df_engineered = df_engineered.drop(columns=['target_7d_ago', 'datetime_drop'])
     df_engineered = df_engineered.dropna().reset_index(drop=True)
 

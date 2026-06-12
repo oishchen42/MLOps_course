@@ -38,8 +38,8 @@ def xgb_model(chronological_data_split: dict):
         xgb_model.fit(
             X_train, 
             y_train,
-            eval_set=[(X_test, y_test)], # Tells XGBoost to evaluate at every step
-            verbose=False # Keeps your terminal from getting spammed with 1000 lines of text
+            eval_set=[(X_test, y_test)],  # Let XGBoost evaluate performance on test data during training
+            verbose=False  # Don't clutter the logs with training progress output
         )
 
         predictions = xgb_model.predict(X_test)
@@ -47,7 +47,7 @@ def xgb_model(chronological_data_split: dict):
         mae = mean_absolute_error(y_test, predictions)
         r2 = r2_score(y_test, predictions)
 
-        # Capture the exact column names and datatypes
+        # Record the input/output schema so MLflow knows what data this model expects
         signature = mlflow.models.signature.infer_signature(X_train, predictions)
 
         mlflow.xgboost.log_model(

@@ -12,14 +12,14 @@ def chronological_data_split(dfs_united_with_time_features: pd.DataFrame) -> dic
     """
     df = dfs_united_with_time_features.copy()
     
-    # Calculate the exact row index for the 80% cutoff
+    # Find the 80% mark in the dataset
     split_index = int(len(df) * 0.8)
     
-    # Slice the data chronologically
+    # Divide the data chronologically without shuffling (important for time-series!)
     train_df = df.iloc[:split_index].reset_index(drop=True)
     test_df = df.iloc[split_index:].reset_index(drop=True)
     
-    # Return as a dictionary so downstream models can easily access them
+    # Package them so the models can access both easily
     return {
         "train": train_df,
         "test": test_df

@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-# Only run setup if the database is empty
+# Check if we've already initialized the database
 if [ ! -f /home/lakefs/data/.setup_done ]; then
   echo "Running initial LakeFS setup..."
   lakefs setup \
@@ -13,5 +13,5 @@ if [ ! -f /home/lakefs/data/.setup_done ]; then
   echo "LakeFS setup completed."
 fi
 
-# Hand over control to start the actual web server
+# Start the lakeFS web server
 exec lakefs run

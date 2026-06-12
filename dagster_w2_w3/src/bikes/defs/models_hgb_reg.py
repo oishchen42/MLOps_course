@@ -15,7 +15,7 @@ import os
     ins={"chronological_data_split": dg.AssetIn()}
 )
 def hist_gradient_boosting_model(chronological_data_split: dict):
-    # 1. Unpack the split data directly
+    # Extract the train/test data from the preprocessor
     data = th.preprocess_train_test(
         chronological_data_split=chronological_data_split,)
     
@@ -30,15 +30,16 @@ def hist_gradient_boosting_model(chronological_data_split: dict):
 
     mlflow.set_experiment("Bike Rentals Predictions")
     
-    mlflow.sklearn.autolog()  # Automatically logs parameters, metrics, and the model itself
+    # MLflow will automatically capture parameters, metrics, and the model
+    mlflow.sklearn.autolog()
     with mlflow.start_run(run_name="HistGradientBoosting Run") as run:
         mlflow.set_tag("model_type", "HistGradientBoostingRegressor")
-        # 3. Train the HistGradientBoosting Model
-        # n_estimators=1000 replaces the max_iter parameter from the previous model
+        # Train the HistGradientBoosting model (a fast boosting algorithm)
+        # max_iter controls the number of boosting stages
         xgb_model = HistGradientBoostingRegressor(max_iter=1000, random_state=42)
         xgb_model.fit(X_train, y_train)
         
-        # 4. Evaluate the model
+        # Generate predictions and calculate performance metrics
         predictions = xgb_model.predict(X_test)
         rmse = root_mean_squared_error(y_test, predictions)
         mae = mean_absolute_error(y_test, predictions)
@@ -50,10 +51,10 @@ def hist_gradient_boosting_model(chronological_data_split: dict):
 
         mlflow_run_url = f"http://127.0.0.1:5000/#/experiments/{run.info.experiment_id}/runs/{run.info.run_id}"
 
-        # 5. Fetch Feature Importance
+        # Calculate feature importance to understand model behavior
         importance_df = mh.analyze_feature_importance(xgb_model, X_test, y_test)
         
-        # 6. Return the object and log metadata to the UI
+        # Package the model with its performance metrics
         return dg.Output(
             value=xgb_model,
             metadata={

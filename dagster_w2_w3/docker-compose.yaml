@@ -68,9 +68,7 @@ services:
       - mlflow
     networks:
       - mlops_network
-Dagster orchestrates the entire ML pipeline. We don't start it until
-  # the data is fully uploaded to lakeFS to avoid any missing dependencies.
-  # 5. Dagster (Waits for data upload to finish completely)
+
   dagster:
     build:
       context: .

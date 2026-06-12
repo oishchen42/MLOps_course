@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 
-# If the database is empty (no setup marker), run the setup command
+# Only initialize the database the first time - check for a marker file
 if [ ! -f /home/lakefs/.setup_done ]; then
   echo "Running initial LakeFS setup..."
   lakefs setup \
@@ -13,5 +13,5 @@ if [ ! -f /home/lakefs/.setup_done ]; then
   echo "LakeFS setup completed."
 fi
 
-# Start the LakeFS server
+# Now start the actual lakeFS server
 exec lakefs run --local-settings

@@ -2,7 +2,7 @@ FROM treeverse/lakefs:latest
 
 USER root
 
-# This path must match your local folder structure
+# Copy and prepare the startup script
 COPY scripts/start_lakefs.sh /start_lakefs.sh
 RUN chmod +x /start_lakefs.sh
 
